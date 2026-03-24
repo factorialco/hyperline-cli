@@ -1,0 +1,6 @@
+{
+  "meta": { "total": 1, "taken": 1, "skipped": 0 },
+  "data": [
+    { "id": "sub_001", "status": "active", "customer_id": "cus_001" }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "meta": { "total": 2, "taken": 2, "skipped": 0 },
+  "data": [
+    { "id": "itm_001", "name": "Pro Plan", "type": "flat_fee" },
+    { "id": "itm_002", "name": "Enterprise Plan", "type": "flat_fee" }
+  ]
+}

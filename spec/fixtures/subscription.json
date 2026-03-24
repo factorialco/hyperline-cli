@@ -1,0 +1,7 @@
+{
+  "id": "sub_001",
+  "status": "active",
+  "customer_id": "cus_001",
+  "current_period_start": "2026-01-01",
+  "current_period_end": "2026-02-01"
+}
