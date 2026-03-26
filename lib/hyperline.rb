@@ -9,6 +9,9 @@ require_relative 'hyperline/resources/base_resource'
 require_relative 'hyperline/resources/products'
 require_relative 'hyperline/resources/subscriptions'
 require_relative 'hyperline/resources/invoices'
+require_relative 'hyperline/resources/plans'
+require_relative 'hyperline/resources/price_configurations'
+require_relative 'hyperline/resources/price_books'
 require_relative 'hyperline/client'
 
 module Hyperline
@@ -25,9 +28,7 @@ module Hyperline
 
     def client
       @client_mutex ||= Mutex.new
-      @client_mutex.synchronize do
-        @client ||= Client.new
-      end
+      @client_mutex.synchronize { @client ||= Client.new }
     end
 
     def reset!
