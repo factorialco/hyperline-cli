@@ -37,9 +37,5 @@ module Hyperline
     def price_configurations
       @price_configurations ||= Resources::PriceConfigurations.new(@connection)
     end
-
-    def price_books
-      @price_books ||= Resources::PriceBooks.new(@connection)
-    end
   end
 end
