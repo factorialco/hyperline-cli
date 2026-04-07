@@ -32,13 +32,16 @@ RSpec.describe Hyperline::Resources::Products do
 
   describe '#create' do
     it 'creates a product' do
-      stub = stub_request(:post, 'https://api.hyperline.co/v1/products')
-             .with(body: { name: 'New Plan', type: 'flat_fee' }.to_json)
-             .to_return(
-               status: 201,
-               headers: { 'Content-Type' => 'application/json' },
-               body: { id: 'itm_003', name: 'New Plan', type: 'flat_fee' }.to_json
-             )
+      stub =
+        stub_request(:post, 'https://api.hyperline.co/v1/products').with(
+          body: { name: 'New Plan', type: 'flat_fee' }.to_json
+        ).to_return(
+          status: 201,
+          headers: {
+            'Content-Type' => 'application/json'
+          },
+          body: { id: 'itm_003', name: 'New Plan', type: 'flat_fee' }.to_json
+        )
 
       result = products.create(name: 'New Plan', type: 'flat_fee')
 
@@ -49,13 +52,16 @@ RSpec.describe Hyperline::Resources::Products do
 
   describe '#update' do
     it 'updates a product' do
-      stub = stub_request(:put, 'https://api.hyperline.co/v1/products/itm_001')
-             .with(body: { name: 'Updated Plan' }.to_json)
-             .to_return(
-               status: 200,
-               headers: { 'Content-Type' => 'application/json' },
-               body: { id: 'itm_001', name: 'Updated Plan' }.to_json
-             )
+      stub =
+        stub_request(:put, 'https://api.hyperline.co/v1/products/itm_001').with(
+          body: { name: 'Updated Plan' }.to_json
+        ).to_return(
+          status: 200,
+          headers: {
+            'Content-Type' => 'application/json'
+          },
+          body: { id: 'itm_001', name: 'Updated Plan' }.to_json
+        )
 
       result = products.update('itm_001', name: 'Updated Plan')
 
@@ -85,7 +91,14 @@ RSpec.describe Hyperline::Resources::Products do
     end
 
     it 'raises NotFoundError on 404' do
-      stub_api(:get, '/v1/products/itm_missing', status: 404, body: { message: 'Product not found' })
+      stub_api(
+        :get,
+        '/v1/products/itm_missing',
+        status: 404,
+        body: {
+          message: 'Product not found'
+        }
+      )
 
       expect { products.get('itm_missing') }.to raise_error(Hyperline::NotFoundError)
     end
@@ -94,6 +107,24 @@ RSpec.describe Hyperline::Resources::Products do
       stub_api(:get, '/v1/products/itm_001', status: 429, body: { message: 'Rate limit exceeded' })
 
       expect { products.get('itm_001') }.to raise_error(Hyperline::RateLimitError)
+    end
+
+    it 'raises ApiError when response has nil status' do
+      stub_request(:post, 'https://api.hyperline.co/v1/products').to_raise(
+        Faraday::ClientError.new('unexpected error')
+      )
+
+      expect { products.create(name: 'Test') }.to raise_error(Hyperline::ApiError) do |error|
+        expect(error.status).to be_nil
+      end
+    end
+
+    it 'raises ServerError on 500' do
+      stub_api(:get, '/v1/products', status: 500, body: { message: 'Internal server error' })
+
+      expect { products.list }.to raise_error(Hyperline::ServerError) do |error|
+        expect(error.status).to eq(500)
+      end
     end
   end
 end
