@@ -10,8 +10,8 @@ require_relative 'hyperline/resources/products'
 require_relative 'hyperline/resources/subscriptions'
 require_relative 'hyperline/resources/invoices'
 require_relative 'hyperline/resources/plans'
+require_relative 'hyperline/resources/custom_properties'
 require_relative 'hyperline/resources/price_configurations'
-require_relative 'hyperline/resources/price_books'
 require_relative 'hyperline/client'
 
 module Hyperline

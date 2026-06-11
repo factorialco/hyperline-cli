@@ -4,7 +4,7 @@ module Hyperline
   module Resources
     class PriceConfigurations < BaseResource
       def update_prices(id, prices:)
-        request(:put, "#{resource_path(id)}/prices", { prices: prices })
+        request(:put, "#{resource_path(id)}/prices", prices)
       end
 
       def archive(id)

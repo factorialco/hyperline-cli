@@ -19,11 +19,16 @@ module Hyperline
     end
   end
 
-  class AuthenticationError < ApiError; end
-  class BadRequestError < ApiError; end
-  class NotFoundError < ApiError; end
-  class RateLimitError < ApiError; end
-  class ServerError < ApiError; end
+  class AuthenticationError < ApiError
+  end
+  class BadRequestError < ApiError
+  end
+  class NotFoundError < ApiError
+  end
+  class RateLimitError < ApiError
+  end
+  class ServerError < ApiError
+  end
 
   # @api private
   module ErrorMapper
@@ -35,7 +40,7 @@ module Hyperline
     }.freeze
 
     def self.from_response(status, body)
-      klass = MAPPED[status] || (status >= 500 ? ServerError : ApiError)
+      klass = MAPPED[status] || (status.nil? ? ApiError : (status >= 500 ? ServerError : ApiError))
       klass.new(status: status, body: body)
     end
   end

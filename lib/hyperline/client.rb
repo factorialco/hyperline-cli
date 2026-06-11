@@ -38,8 +38,8 @@ module Hyperline
       @price_configurations ||= Resources::PriceConfigurations.new(@connection)
     end
 
-    def price_books
-      @price_books ||= Resources::PriceBooks.new(@connection)
+    def custom_properties
+      @custom_properties ||= Resources::CustomProperties.new(@connection)
     end
   end
 end
