@@ -12,6 +12,8 @@ require_relative 'hyperline/resources/invoices'
 require_relative 'hyperline/resources/plans'
 require_relative 'hyperline/resources/custom_properties'
 require_relative 'hyperline/resources/price_configurations'
+require_relative 'hyperline/resources/aggregators'
+require_relative 'hyperline/resources/price_books'
 require_relative 'hyperline/client'
 
 module Hyperline

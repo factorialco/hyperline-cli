@@ -41,5 +41,13 @@ module Hyperline
     def custom_properties
       @custom_properties ||= Resources::CustomProperties.new(@connection)
     end
+
+    def aggregators
+      @aggregators ||= Resources::Aggregators.new(@connection)
+    end
+
+    def price_books
+      @price_books ||= Resources::PriceBooks.new(@connection)
+    end
   end
 end
