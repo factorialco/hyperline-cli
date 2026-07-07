@@ -64,6 +64,29 @@ RSpec.describe Hyperline::Resources::Subscriptions do
     end
   end
 
+  describe '#update_operation' do
+    it 'posts the operation payload to the v1 update endpoint' do
+      body = {
+        type: 'update_count',
+        payload: { product_id: 'itm_001', count: 25 },
+        application_schedule: 'immediately',
+        calculation_method: 'pro_rata'
+      }
+      stub = stub_request(:post, 'https://api.hyperline.co/v1/subscriptions/sub_001/update')
+             .with(body: body.to_json)
+             .to_return(
+               status: 200,
+               headers: { 'Content-Type' => 'application/json' },
+               body: { id: 'sub_001', status: 'active' }.to_json
+             )
+
+      result = subscriptions.update_operation('sub_001', body)
+
+      expect(stub).to have_been_requested
+      expect(result['id']).to eq('sub_001')
+    end
+  end
+
   describe 'action methods' do
     %w[cancel pause activate reactivate reinstate renew].each do |action|
       describe "##{action}" do

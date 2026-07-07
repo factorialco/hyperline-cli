@@ -11,6 +11,14 @@ module Hyperline
         request(:put, "/v2/subscriptions/#{id}", attrs)
       end
 
+      # Applies or schedules an operation on a subscription (e.g. an "update_count" seat change).
+      # `body` is the raw operation payload, e.g.
+      #   { type: "update_count", payload: { product_id:, count: }, application_schedule:, ... }
+      # POST /v1/subscriptions/{id}/update
+      def update_operation(id, body)
+        request(:post, "#{resource_path(id)}/update", body)
+      end
+
       def cancel(id, **params)
         request(:post, "#{resource_path(id)}/cancel", params)
       end
