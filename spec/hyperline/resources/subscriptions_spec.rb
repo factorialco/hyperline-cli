@@ -64,6 +64,35 @@ RSpec.describe Hyperline::Resources::Subscriptions do
     end
   end
 
+  describe '#find_by_custom_property' do
+    it 'searches the v2 list endpoint filtered by custom_fields and returns the first match' do
+      stub = stub_request(:get, 'https://api.hyperline.co/v2/subscriptions')
+             .with(query: { 'custom_fields' => { 'chargebee_subscription_id' => 'cb_sub_1' } })
+             .to_return(
+               status: 200,
+               headers: { 'Content-Type' => 'application/json' },
+               body: { data: [{ id: 'sub_native_1' }], meta: { total: 1 } }.to_json
+             )
+
+      result = subscriptions.find_by_custom_property('chargebee_subscription_id', 'cb_sub_1')
+
+      expect(stub).to have_been_requested
+      expect(result['id']).to eq('sub_native_1')
+    end
+
+    it 'returns nil when there is no match' do
+      stub_request(:get, 'https://api.hyperline.co/v2/subscriptions')
+        .with(query: { 'custom_fields' => { 'chargebee_subscription_id' => 'missing' } })
+        .to_return(
+          status: 200,
+          headers: { 'Content-Type' => 'application/json' },
+          body: { data: [], meta: { total: 0 } }.to_json
+        )
+
+      expect(subscriptions.find_by_custom_property('chargebee_subscription_id', 'missing')).to be_nil
+    end
+  end
+
   describe '#update_operation' do
     it 'posts the operation payload to the v1 update endpoint' do
       body = {
