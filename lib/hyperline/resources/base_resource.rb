@@ -23,6 +23,13 @@ module Hyperline
         request(:get, resource_path(id))
       end
 
+      # Finds the first entity whose custom property `slug` equals `value`, filtering server-side via
+      # the `custom_fields` query param (key/value object). Returns the entity hash or nil.
+      def find_by_custom_property(slug, value)
+        response = request(:get, custom_property_search_path, { custom_fields: { slug => value } })
+        Array(response['data']).first
+      end
+
       def create(**attrs)
         request(:post, resource_path, attrs)
       end
@@ -39,6 +46,12 @@ module Hyperline
 
       def resource_path(id = nil)
         id ? "#{base_path}/#{id}" : base_path
+      end
+
+      # List path used for custom-property search; overridable when it differs from base_path
+      # (e.g. subscriptions list is v2 while other subscription paths are v1).
+      def custom_property_search_path
+        base_path
       end
 
       def base_path

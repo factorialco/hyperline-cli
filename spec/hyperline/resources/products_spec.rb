@@ -30,6 +30,23 @@ RSpec.describe Hyperline::Resources::Products do
     end
   end
 
+  describe '#find_by_custom_property' do
+    it 'searches the products list filtered by custom_fields and returns the first match' do
+      stub = stub_request(:get, 'https://api.hyperline.co/v1/products')
+             .with(query: { 'custom_fields' => { 'factorial_item_id' => 'plan_seat' } })
+             .to_return(
+               status: 200,
+               headers: { 'Content-Type' => 'application/json' },
+               body: { data: [{ id: 'itm_native_1' }], meta: { total: 1 } }.to_json
+             )
+
+      result = products.find_by_custom_property('factorial_item_id', 'plan_seat')
+
+      expect(stub).to have_been_requested
+      expect(result['id']).to eq('itm_native_1')
+    end
+  end
+
   describe '#create' do
     it 'creates a product' do
       stub =
