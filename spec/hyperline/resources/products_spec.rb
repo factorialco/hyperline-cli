@@ -31,13 +31,16 @@ RSpec.describe Hyperline::Resources::Products do
   end
 
   describe '#find_by_custom_property' do
-    it 'searches the products list filtered by custom_fields and returns the first match' do
+    it 'searches the products list filtered by custom_properties and returns the verified match' do
       stub = stub_request(:get, 'https://api.hyperline.co/v1/products')
-             .with(query: { 'custom_fields' => { 'factorial_item_id' => 'plan_seat' } })
+             .with(query: { 'custom_properties' => { 'factorial_item_id' => 'plan_seat' } })
              .to_return(
                status: 200,
                headers: { 'Content-Type' => 'application/json' },
-               body: { data: [{ id: 'itm_native_1' }], meta: { total: 1 } }.to_json
+               body: {
+                 data: [{ id: 'itm_native_1', custom_properties: { factorial_item_id: 'plan_seat' } }],
+                 meta: { total: 1 }
+               }.to_json
              )
 
       result = products.find_by_custom_property('factorial_item_id', 'plan_seat')

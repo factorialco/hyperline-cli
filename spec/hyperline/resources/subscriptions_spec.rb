@@ -65,13 +65,18 @@ RSpec.describe Hyperline::Resources::Subscriptions do
   end
 
   describe '#find_by_custom_property' do
-    it 'searches the v2 list endpoint filtered by custom_fields and returns the first match' do
+    it 'searches the v2 list endpoint filtered by custom_properties and returns the verified match' do
       stub = stub_request(:get, 'https://api.hyperline.co/v2/subscriptions')
-             .with(query: { 'custom_fields' => { 'chargebee_subscription_id' => 'cb_sub_1' } })
+             .with(query: { 'custom_properties' => { 'chargebee_subscription_id' => 'cb_sub_1' } })
              .to_return(
                status: 200,
                headers: { 'Content-Type' => 'application/json' },
-               body: { data: [{ id: 'sub_native_1' }], meta: { total: 1 } }.to_json
+               body: {
+                 data: [
+                   { id: 'sub_native_1', custom_properties: { chargebee_subscription_id: 'cb_sub_1' } }
+                 ],
+                 meta: { total: 1 }
+               }.to_json
              )
 
       result = subscriptions.find_by_custom_property('chargebee_subscription_id', 'cb_sub_1')
@@ -82,7 +87,7 @@ RSpec.describe Hyperline::Resources::Subscriptions do
 
     it 'returns nil when there is no match' do
       stub_request(:get, 'https://api.hyperline.co/v2/subscriptions')
-        .with(query: { 'custom_fields' => { 'chargebee_subscription_id' => 'missing' } })
+        .with(query: { 'custom_properties' => { 'chargebee_subscription_id' => 'missing' } })
         .to_return(
           status: 200,
           headers: { 'Content-Type' => 'application/json' },
@@ -90,6 +95,62 @@ RSpec.describe Hyperline::Resources::Subscriptions do
         )
 
       expect(subscriptions.find_by_custom_property('chargebee_subscription_id', 'missing')).to be_nil
+    end
+
+    it 'returns nil (instead of an arbitrary entity) when the API ignores the filter' do
+      # Hyperline silently drops unknown query params and returns the unfiltered list; the
+      # client-side verification must reject entities whose property does not actually match.
+      stub_request(:get, 'https://api.hyperline.co/v2/subscriptions')
+        .with(query: { 'custom_properties' => { 'chargebee_subscription_id' => 'missing' } })
+        .to_return(
+          status: 200,
+          headers: { 'Content-Type' => 'application/json' },
+          body: { data: [{ id: 'sub_other', custom_properties: {} }], meta: { total: 1 } }.to_json
+        )
+
+      expect(subscriptions.find_by_custom_property('chargebee_subscription_id', 'missing')).to be_nil
+    end
+  end
+
+  describe '#find_by_integration_entity_id' do
+    it 'filters by integration_entity_id and returns the entity whose integrations match' do
+      stub = stub_request(:get, 'https://api.hyperline.co/v2/subscriptions')
+             .with(query: { 'integration_entity_id' => 'cb_sub_1' })
+             .to_return(
+               status: 200,
+               headers: { 'Content-Type' => 'application/json' },
+               body: {
+                 data: [
+                   {
+                     id: 'sub_native_1',
+                     integrations: [{ entity_id: 'cb_sub_1', provider_name: 'chargebee' }]
+                   }
+                 ],
+                 meta: { total: 1 }
+               }.to_json
+             )
+
+      result = subscriptions.find_by_integration_entity_id('cb_sub_1')
+
+      expect(stub).to have_been_requested
+      expect(result['id']).to eq('sub_native_1')
+    end
+
+    it 'returns nil (instead of an arbitrary entity) when the API ignores the filter' do
+      stub_request(:get, 'https://api.hyperline.co/v2/subscriptions')
+        .with(query: { 'integration_entity_id' => 'missing' })
+        .to_return(
+          status: 200,
+          headers: { 'Content-Type' => 'application/json' },
+          body: {
+            data: [
+              { id: 'sub_other', integrations: [{ entity_id: 'ZZZ', provider_name: 'chargebee' }] }
+            ],
+            meta: { total: 1 }
+          }.to_json
+        )
+
+      expect(subscriptions.find_by_integration_entity_id('missing')).to be_nil
     end
   end
 

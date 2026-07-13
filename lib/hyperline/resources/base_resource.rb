@@ -23,11 +23,24 @@ module Hyperline
         request(:get, resource_path(id))
       end
 
-      # Finds the first entity whose custom property `slug` equals `value`, filtering server-side via
-      # the `custom_fields` query param (key/value object). Returns the entity hash or nil.
+      # Finds the entity whose custom property `slug` equals `value`, filtering server-side via the
+      # documented `custom_properties` query param. The result is ALWAYS re-verified client-side:
+      # Hyperline silently ignores unknown query params (returning the unfiltered list), so trusting
+      # the first element would return an arbitrary entity. Returns the entity hash or nil.
       def find_by_custom_property(slug, value)
-        response = request(:get, custom_property_search_path, { custom_fields: { slug => value } })
-        Array(response['data']).first
+        response = request(:get, search_path, { custom_properties: { slug => value } })
+        Array(response['data']).find { |entity| entity.dig('custom_properties', slug) == value }
+      end
+
+      # Finds the entity imported from an external provider (Chargebee, Stripe, ...) by its id in
+      # that provider, using the documented `integration_entity_id` filter. Re-verified client-side
+      # against the entity's `integrations` array for the same reason as above. Returns the entity
+      # hash or nil.
+      def find_by_integration_entity_id(entity_id)
+        response = request(:get, search_path, { integration_entity_id: entity_id })
+        Array(response['data']).find do |entity|
+          Array(entity['integrations']).any? { |integration| integration['entity_id'] == entity_id }
+        end
       end
 
       def create(**attrs)
@@ -48,9 +61,9 @@ module Hyperline
         id ? "#{base_path}/#{id}" : base_path
       end
 
-      # List path used for custom-property search; overridable when it differs from base_path
+      # List path used for search/filtering; overridable when it differs from base_path
       # (e.g. subscriptions list is v2 while other subscription paths are v1).
-      def custom_property_search_path
+      def search_path
         base_path
       end
 
