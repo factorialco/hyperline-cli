@@ -64,7 +64,7 @@ module Hyperline
       end
 
       # Listing/searching subscriptions is on v2 (get/update are already v2 above).
-      def custom_property_search_path
+      def search_path
         '/v2/subscriptions'
       end
     end
