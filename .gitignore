@@ -1,2 +1,15 @@
 plan-hyperlineRubyGem.prompt.md
 /.DS*
+
+# Build artifacts
+*.gem
+/pkg/
+
+# Bundler
+/.bundle/
+/vendor/bundle/
+
+# Test / lint caches
+/coverage/
+/.rspec_status
+/.rubocop_cache/

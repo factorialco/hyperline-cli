@@ -110,6 +110,53 @@ RSpec.describe Hyperline::Resources::Subscriptions do
 
       expect(subscriptions.find_by_custom_property('chargebee_subscription_id', 'missing')).to be_nil
     end
+
+    it 'pages through the result set when the match is not on the first page' do
+      # The filter may be ignored server-side, so a real match can sit on any page. Searching only
+      # the first response would return nil for an entity that does exist.
+      page1 = stub_request(:get, 'https://api.hyperline.co/v2/subscriptions')
+              .with(query: { 'custom_properties' => { 'chargebee_subscription_id' => 'cb_sub_2' } })
+              .to_return(
+                status: 200,
+                headers: { 'Content-Type' => 'application/json' },
+                body: {
+                  data: [{ id: 'sub_other', custom_properties: {} }],
+                  meta: { total: 2, taken: 1, skipped: 0 }
+                }.to_json
+              )
+      page2 = stub_request(:get, 'https://api.hyperline.co/v2/subscriptions')
+              .with(query: {
+                      'custom_properties' => { 'chargebee_subscription_id' => 'cb_sub_2' },
+                      'skip' => '1'
+                    })
+              .to_return(
+                status: 200,
+                headers: { 'Content-Type' => 'application/json' },
+                body: {
+                  data: [{ id: 'sub_native_2', custom_properties: { chargebee_subscription_id: 'cb_sub_2' } }],
+                  meta: { total: 2, taken: 1, skipped: 1 }
+                }.to_json
+              )
+
+      result = subscriptions.find_by_custom_property('chargebee_subscription_id', 'cb_sub_2')
+
+      expect(page1).to have_been_requested
+      expect(page2).to have_been_requested
+      expect(result['id']).to eq('sub_native_2')
+    end
+
+    it 'stops after one page when meta omits the pagination counters' do
+      stub = stub_request(:get, 'https://api.hyperline.co/v2/subscriptions')
+             .with(query: { 'custom_properties' => { 'chargebee_subscription_id' => 'missing' } })
+             .to_return(
+               status: 200,
+               headers: { 'Content-Type' => 'application/json' },
+               body: { data: [{ id: 'sub_other', custom_properties: {} }] }.to_json
+             )
+
+      expect(subscriptions.find_by_custom_property('chargebee_subscription_id', 'missing')).to be_nil
+      expect(stub).to have_been_requested.once
+    end
   end
 
   describe '#find_by_integration_entity_id' do
@@ -151,6 +198,35 @@ RSpec.describe Hyperline::Resources::Subscriptions do
         )
 
       expect(subscriptions.find_by_integration_entity_id('missing')).to be_nil
+    end
+
+    it 'pages through the result set when the match is not on the first page' do
+      page1 = stub_request(:get, 'https://api.hyperline.co/v2/subscriptions')
+              .with(query: { 'integration_entity_id' => 'cb_sub_2' })
+              .to_return(
+                status: 200,
+                headers: { 'Content-Type' => 'application/json' },
+                body: {
+                  data: [{ id: 'sub_other', integrations: [{ entity_id: 'ZZZ' }] }],
+                  meta: { total: 2, taken: 1, skipped: 0 }
+                }.to_json
+              )
+      page2 = stub_request(:get, 'https://api.hyperline.co/v2/subscriptions')
+              .with(query: { 'integration_entity_id' => 'cb_sub_2', 'skip' => '1' })
+              .to_return(
+                status: 200,
+                headers: { 'Content-Type' => 'application/json' },
+                body: {
+                  data: [{ id: 'sub_native_2', integrations: [{ entity_id: 'cb_sub_2' }] }],
+                  meta: { total: 2, taken: 1, skipped: 1 }
+                }.to_json
+              )
+
+      result = subscriptions.find_by_integration_entity_id('cb_sub_2')
+
+      expect(page1).to have_been_requested
+      expect(page2).to have_been_requested
+      expect(result['id']).to eq('sub_native_2')
     end
   end
 
