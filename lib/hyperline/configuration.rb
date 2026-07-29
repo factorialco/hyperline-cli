@@ -2,7 +2,7 @@
 
 module Hyperline
   class Configuration
-    DEFAULT_BASE_URL     = 'https://sandbox.api.hyperline.co'
+    DEFAULT_BASE_URL     = 'https://api.hyperline.co'
     DEFAULT_TIMEOUT      = 30
     DEFAULT_OPEN_TIMEOUT = 10
     DEFAULT_MAX_RETRIES  = 3
