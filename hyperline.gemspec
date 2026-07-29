@@ -10,15 +10,16 @@ Gem::Specification.new do |spec|
 
   spec.summary       = 'Ruby client for the Hyperline billing API'
   spec.description   = 'Idiomatic Ruby client for the Hyperline billing platform. ' \
-                       'Covers Products, Subscriptions, and Invoices with automatic ' \
+                       'Covers Products, Subscriptions, Invoices, Plans, Price Configurations, ' \
+                       'Price Books, Aggregators, and Custom Properties with automatic ' \
                        'pagination, retry, and error handling.'
   spec.homepage      = 'https://docs.hyperline.co'
   spec.license       = 'MIT'
   spec.required_ruby_version = '>= 3.0'
 
   spec.metadata['homepage_uri']    = spec.homepage
-  spec.metadata['source_code_uri'] = 'https://github.com/hyperline/hyperline-ruby'
-  spec.metadata['changelog_uri']   = 'https://github.com/hyperline/hyperline-ruby/blob/main/CHANGELOG.md'
+  spec.metadata['source_code_uri'] = 'https://github.com/factorialco/hyperline-cli'
+  spec.metadata['changelog_uri']   = 'https://github.com/factorialco/hyperline-cli/blob/main/CHANGELOG.md'
   spec.metadata['rubygems_mfa_required'] = 'true'
 
   spec.files = Dir['lib/**/*.rb', 'LICENSE.txt', 'README.md', 'CHANGELOG.md']

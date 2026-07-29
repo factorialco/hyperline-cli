@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require 'json'
+
 module Hyperline
   module Resources
     class BaseResource
@@ -28,8 +30,9 @@ module Hyperline
       # Hyperline silently ignores unknown query params (returning the unfiltered list), so trusting
       # the first element would return an arbitrary entity. Returns the entity hash or nil.
       def find_by_custom_property(slug, value)
-        response = request(:get, search_path, { custom_properties: { slug => value } })
-        Array(response['data']).find { |entity| entity.dig('custom_properties', slug) == value }
+        search_find({ custom_properties: { slug => value } }) do |entity|
+          entity.dig('custom_properties', slug) == value
+        end
       end
 
       # Finds the entity imported from an external provider (Chargebee, Stripe, ...) by its id in
@@ -37,8 +40,7 @@ module Hyperline
       # against the entity's `integrations` array for the same reason as above. Returns the entity
       # hash or nil.
       def find_by_integration_entity_id(entity_id)
-        response = request(:get, search_path, { integration_entity_id: entity_id })
-        Array(response['data']).find do |entity|
+        search_find({ integration_entity_id: entity_id }) do |entity|
           Array(entity['integrations']).any? { |integration| integration['entity_id'] == entity_id }
         end
       end
@@ -65,6 +67,43 @@ module Hyperline
       # (e.g. subscriptions list is v2 while other subscription paths are v1).
       def search_path
         base_path
+      end
+
+      # Pages through `search_path` with `params`, returning the first entity for which the block
+      # returns true, or nil once the result set is exhausted.
+      #
+      # Paging is required, not an optimisation: because Hyperline silently drops unknown query
+      # params and returns the *unfiltered* list, a genuine match can sit on any page. Searching
+      # only the first response would return nil for an entity that exists, which is
+      # indistinguishable from "not found".
+      #
+      # The first request deliberately omits `skip` so the query matches an unpaged search.
+      def search_find(params, &matcher)
+        skipped = 0
+
+        loop do
+          response = request(:get, search_path, skipped.zero? ? params : params.merge(skip: skipped))
+          data = Array(response['data'])
+          match = data.find(&matcher)
+          return match if match
+
+          skipped = next_offset(response['meta'], data.size, skipped)
+          return nil unless skipped
+        end
+      end
+
+      # Offset of the page following the one described by `meta`, or nil when there is no next
+      # page. Meta is best-effort: an endpoint answering with a partial envelope (no `total` or
+      # `taken`) ends the walk rather than looping forever or raising on nil.
+      def next_offset(meta, page_size, skipped)
+        return nil unless meta.is_a?(Hash)
+
+        total = meta['total']
+        taken = (meta['taken'] || page_size).to_i
+        return nil if total.nil? || taken.zero?
+
+        offset = (meta['skipped'] || skipped).to_i + taken
+        offset < total.to_i ? offset : nil
       end
 
       def base_path
