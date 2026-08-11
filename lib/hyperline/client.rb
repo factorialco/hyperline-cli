@@ -22,6 +22,10 @@ module Hyperline
       @products ||= Resources::Products.new(@connection)
     end
 
+    def customers
+      @customers ||= Resources::Customers.new(@connection)
+    end
+
     def subscriptions
       @subscriptions ||= Resources::Subscriptions.new(@connection)
     end
