@@ -6,11 +6,15 @@ module Hyperline
 
     attr_reader :data, :meta
 
-    def initialize(data:, meta:, resource:, params:)
+    # `method` is the resource method that produced this page. It matters because next_page has to
+    # re-issue the *same* call: defaulting to #list meant a page from a custom list method, such as
+    # Subscriptions#list_templates, paged into the resource's default endpoint instead.
+    def initialize(data:, meta:, resource:, params:, method: :list)
       @data     = data
       @meta     = meta
       @resource = resource
       @params   = params
+      @method   = method
     end
 
     def each(&block)
@@ -36,7 +40,7 @@ module Hyperline
     def next_page
       return nil unless next_page?
 
-      @resource.list(**@params, skip: skipped + taken)
+      @resource.public_send(@method, **@params, skip: skipped + taken)
     end
 
     def each_page

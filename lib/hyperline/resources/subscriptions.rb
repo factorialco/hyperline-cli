@@ -3,6 +3,20 @@
 module Hyperline
   module Resources
     class Subscriptions < BaseResource
+      # /v1/subscriptions does not exist -- it answers 404 "Route not found" -- so listing goes
+      # through the v2 path that search already uses. base_path stays on v1 because the action
+      # sub-paths below genuinely live there: POST /v1/subscriptions/{id}/update is what the API
+      # accepts, and so are cancel, pause and the rest.
+      def list(**params)
+        response = request(:get, search_path, params)
+        Collection.new(
+          data: response['data'],
+          meta: response['meta'],
+          resource: self,
+          params: params
+        )
+      end
+
       def get(id)
         request(:get, "/v2/subscriptions/#{id}")
       end
@@ -92,7 +106,8 @@ module Hyperline
           data: response['data'],
           meta: response['meta'],
           resource: self,
-          params: params
+          params: params,
+          method: :list_templates
         )
       end
 
