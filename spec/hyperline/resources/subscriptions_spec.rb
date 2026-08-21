@@ -231,11 +231,15 @@ RSpec.describe Hyperline::Resources::Subscriptions do
   end
 
   describe '#update_operation' do
+    # The payload is the one the API accepts, verified against the sandbox. payment_schedule was
+    # missing here, so this example documented a body that returns 400 -- invisible because the
+    # request is stubbed.
     it 'posts the operation payload to the v1 update endpoint' do
       body = {
         type: 'update_count',
         payload: { product_id: 'itm_001', count: 25 },
         application_schedule: 'immediately',
+        payment_schedule: 'immediately',
         calculation_method: 'pro_rata'
       }
       stub = stub_request(:post, 'https://api.hyperline.co/v1/subscriptions/sub_001/update')

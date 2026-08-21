@@ -28,6 +28,19 @@ module Hyperline
   class NotFoundError < ApiError
   end
 
+  # 409. The request conflicts with existing state -- most often a unique key that is already
+  # taken, such as creating a feature whose code exists. Distinct from a validation failure
+  # because the caller's payload is well formed: the resource is simply already there, which is
+  # frequently the answer a caller wants to treat as success.
+  class ConflictError < ApiError
+  end
+
+  # 422. The payload parsed but the API refused it on semantic grounds -- a limit on a boolean
+  # feature, a count below a committed minimum. Separated from BadRequestError so a caller can
+  # tell "malformed" from "well formed and not allowed".
+  class UnprocessableEntityError < ApiError
+  end
+
   class RateLimitError < ApiError
   end
 
@@ -40,6 +53,8 @@ module Hyperline
       400 => BadRequestError,
       401 => AuthenticationError,
       404 => NotFoundError,
+      409 => ConflictError,
+      422 => UnprocessableEntityError,
       429 => RateLimitError
     }.freeze
 

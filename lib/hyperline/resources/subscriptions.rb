@@ -7,40 +7,83 @@ module Hyperline
         request(:get, "/v2/subscriptions/#{id}")
       end
 
-      def update(id, **attrs)
-        request(:put, "/v2/subscriptions/#{id}", attrs)
+      def update(id, idempotency_key: nil, **attrs)
+        request(:put, "/v2/subscriptions/#{id}", attrs, idempotency_key: idempotency_key)
       end
 
-      # Applies or schedules an operation on a subscription (e.g. an "update_count" seat change).
-      # `body` is the raw operation payload, e.g.
-      #   { type: "update_count", payload: { product_id:, count: }, application_schedule:, ... }
-      # POST /v1/subscriptions/{id}/update
-      def update_operation(id, body)
-        request(:post, "#{resource_path(id)}/update", body)
+      # Applies or schedules an operation on a subscription. POST /v1/subscriptions/{id}/update.
+      #
+      # The payload below is the shape the API actually accepts, verified against the sandbox on
+      # 2026-08-21. `payment_schedule` is required and was missing from this example before, so the
+      # documented call returned 400:
+      #
+      #   {
+      #     type: "update_count",                              # or add_coupon / remove_coupon /
+      #     payload: { product_id:, count: },                  #    update_prices
+      #     application_schedule: "immediately",
+      #     payment_schedule: "immediately",                   # immediately / next_invoice / custom
+      #     calculation_method: "pro_rata"                     # pro_rata / pay_in_full /
+      #   }                                                    #    do_not_charge
+      #
+      # The response is the created operation, `{ "id" => "supd_..." }`. update_count sets the
+      # count outright rather than incrementing it, so applying the same one twice lands on the
+      # same number -- but it does create two operations unless an idempotency key is passed.
+      def update_operation(id, body, idempotency_key: nil)
+        request(:post, "#{resource_path(id)}/update", body, idempotency_key: idempotency_key)
       end
 
-      def cancel(id, **params)
-        request(:post, "#{resource_path(id)}/cancel", params)
+      def cancel(id, idempotency_key: nil, **params)
+        request(
+          :post,
+          "#{resource_path(id)}/cancel",
+          params,
+          idempotency_key: idempotency_key
+        )
       end
 
-      def pause(id, **params)
-        request(:post, "#{resource_path(id)}/pause", params)
+      def pause(id, idempotency_key: nil, **params)
+        request(
+          :post,
+          "#{resource_path(id)}/pause",
+          params,
+          idempotency_key: idempotency_key
+        )
       end
 
-      def activate(id, **params)
-        request(:post, "#{resource_path(id)}/activate", params)
+      def activate(id, idempotency_key: nil, **params)
+        request(
+          :post,
+          "#{resource_path(id)}/activate",
+          params,
+          idempotency_key: idempotency_key
+        )
       end
 
-      def reactivate(id, **params)
-        request(:post, "#{resource_path(id)}/reactivate", params)
+      def reactivate(id, idempotency_key: nil, **params)
+        request(
+          :post,
+          "#{resource_path(id)}/reactivate",
+          params,
+          idempotency_key: idempotency_key
+        )
       end
 
-      def reinstate(id, **params)
-        request(:post, "#{resource_path(id)}/reinstate", params)
+      def reinstate(id, idempotency_key: nil, **params)
+        request(
+          :post,
+          "#{resource_path(id)}/reinstate",
+          params,
+          idempotency_key: idempotency_key
+        )
       end
 
-      def renew(id, **params)
-        request(:post, "#{resource_path(id)}/renew", params)
+      def renew(id, idempotency_key: nil, **params)
+        request(
+          :post,
+          "#{resource_path(id)}/renew",
+          params,
+          idempotency_key: idempotency_key
+        )
       end
 
       def list_templates(**params)
