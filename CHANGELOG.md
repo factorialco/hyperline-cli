@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- Features resource (list, get, create, update, archive, delete), keyed by the feature's `code`
+  rather than an opaque id
+- `Products#features`, `#link_feature`, `#unlink_feature` and `#archive`
+- `ConflictError` (409) and `UnprocessableEntityError` (422); both previously arrived as the
+  generic `ApiError`, indistinguishable from an unrecognised status
+- `idempotency_key:` on every mutating method. Hyperline honours the standard `Idempotency-Key`
+  header — the same key with the same body replays the first response, while the same body with
+  no key applies twice — so a write is retried (429 and 5xx, bounded) only when a caller supplies
+  one. `X-Idempotency-Key` is ignored by the API.
+
+### Fixed
+
+- Both issues listed as known under 0.2.1 below. `Subscriptions#list` used `/v1/subscriptions`,
+  which answers 404 `Route not found`, so the method could never return; listing now goes through
+  the v2 path. `base_path` deliberately stays on v1, because the action sub-paths genuinely live
+  there. And `Collection#next_page` re-issued the resource's default `#list` whatever method had
+  produced the page, so a page from a custom list method paged into the wrong endpoint.
+- `Subscriptions#update_operation`'s documented payload omitted the required `payment_schedule`,
+  so the example in the comment and in the spec returned 400. The verified shape and its enum
+  values are now recorded on the method.
+
+### Notes
+
+- A feature must be archived before it can be deleted: `DELETE` on an active one answers 400
+  `Cannot delete a feature that is not archived`.
+- Archiving is a `PUT` for both products and features; `POST` answers 404 `Route not found`.
+- `GET /v1/products/{id}/features` answers with a bare array, with no `meta`/`data` envelope.
+
+### Known issues
+
+- The write retry budget is a hardcoded constant while `Configuration#max_retries` governs the
+  read retry, so there are two budgets and only one is reachable. Retry policy is not yet
+  configurable per condition, which is why consumers that need a hard timeout or retries on 404
+  still wrap `#request` themselves.
+
 ## [0.2.1] - 2026-07-29
 
 ### Fixed
