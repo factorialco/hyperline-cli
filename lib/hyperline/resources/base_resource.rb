@@ -5,6 +5,8 @@ require 'json'
 module Hyperline
   module Resources
     class BaseResource
+      include Requests
+
       attr_reader :connection
 
       def initialize(connection)
@@ -45,16 +47,16 @@ module Hyperline
         end
       end
 
-      def create(**attrs)
-        request(:post, resource_path, attrs)
+      def create(idempotency_key: nil, **attrs)
+        request(:post, resource_path, attrs, idempotency_key: idempotency_key)
       end
 
-      def update(id, **attrs)
-        request(:put, resource_path(id), attrs)
+      def update(id, idempotency_key: nil, **attrs)
+        request(:put, resource_path(id), attrs, idempotency_key: idempotency_key)
       end
 
-      def delete(id)
-        request(:delete, resource_path(id))
+      def delete(id, idempotency_key: nil)
+        request(:delete, resource_path(id), nil, idempotency_key: idempotency_key)
       end
 
       private
@@ -108,39 +110,6 @@ module Hyperline
 
       def base_path
         raise NotImplementedError, "#{self.class} must implement #base_path"
-      end
-
-      def request(method, path, body = nil)
-        response = case method
-                   when :get
-                     connection.get(path, body)
-                   when :post
-                     connection.post(path, body)
-                   when :put
-                     connection.put(path, body)
-                   when :patch
-                     connection.patch(path, body)
-                   when :delete
-                     connection.delete(path) { |req| req.body = body if body }
-                   end
-        response.body
-      rescue Faraday::ClientError, Faraday::ServerError => e
-        handle_error(e)
-      end
-
-      def handle_error(error)
-        status = error.response&.dig(:status)
-        body = parse_error_body(error.response&.dig(:body))
-        raise ErrorMapper.from_response(status, body)
-      end
-
-      def parse_error_body(body)
-        return body if body.is_a?(Hash)
-        return nil if body.nil?
-
-        JSON.parse(body)
-      rescue JSON::ParserError
-        { 'message' => body.to_s }
       end
     end
   end
