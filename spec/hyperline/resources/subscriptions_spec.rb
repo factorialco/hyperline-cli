@@ -7,14 +7,26 @@ RSpec.describe Hyperline::Resources::Subscriptions do
   let(:subscriptions) { client.subscriptions }
 
   describe '#list' do
-    it 'returns a collection of subscriptions' do
-      stub_api(:get, '/v1/subscriptions', body: fixture('subscriptions_list'))
+    # This stubbed /v1/subscriptions, which does not exist -- the real endpoint answers 404 "Route
+    # not found", so the example asserted the bug rather than the behaviour.
+    it 'lists through the v2 path' do
+      stub = stub_api(:get, '/v2/subscriptions', body: fixture('subscriptions_list'))
 
       result = subscriptions.list
 
+      expect(stub).to have_been_requested
       expect(result).to be_a(Hyperline::Collection)
-      expect(result.data.length).to eq(1)
       expect(result.data.first['id']).to eq('sub_001')
+    end
+
+    # base_path stays on v1 because the action sub-paths genuinely live there.
+    it 'leaves the action paths on v1' do
+      stub = stub_request(:post, 'https://api.hyperline.co/v1/subscriptions/sub_001/cancel')
+             .to_return(status: 200, headers: { 'Content-Type' => 'application/json' }, body: '{}')
+
+      subscriptions.cancel('sub_001')
+
+      expect(stub).to have_been_requested
     end
   end
 
