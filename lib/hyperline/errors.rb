@@ -47,6 +47,12 @@ module Hyperline
   class ServerError < ApiError
   end
 
+  # Raised by Webhook.verify! for any payload that cannot be proven to come from Hyperline:
+  # missing headers, a stale timestamp, or no matching signature. Not an ApiError because no HTTP
+  # response is involved.
+  class WebhookSignatureError < StandardError
+  end
+
   # @api private
   module ErrorMapper
     MAPPED = {

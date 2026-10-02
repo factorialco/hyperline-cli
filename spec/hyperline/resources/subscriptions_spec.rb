@@ -329,4 +329,55 @@ RSpec.describe Hyperline::Resources::Subscriptions do
       end
     end
   end
+
+  describe '#preview_timeline' do
+    it 'passes the query params' do
+      stub = stub_api(:get, '/v1/subscriptions/sub_001/preview-timeline',
+                      query: { 'max_events' => '5', 'until' => '2026-12-01' }, body: { events: [] })
+
+      result = subscriptions.preview_timeline('sub_001', max_events: 5, until: '2026-12-01')
+
+      expect(stub).to have_been_requested
+      expect(result).to eq('events' => [])
+    end
+  end
+
+  describe '#simulate_updates' do
+    it 'posts the update body and returns the estimate' do
+      body = { type: 'update_count', payload: { product_id: 'prod_1', count: 3 },
+               application_schedule: 'immediately', payment_schedule: 'immediately',
+               calculation_method: 'pro_rata' }
+      stub = stub_request(:post, 'https://api.hyperline.co/v1/subscriptions/sub_001/simulate-updates')
+             .with(body: body.to_json)
+             .to_return(status: 200, headers: { 'Content-Type' => 'application/json' },
+                        body: { amount: 1200 }.to_json)
+
+      expect(subscriptions.simulate_updates('sub_001', body)).to eq('amount' => 1200)
+      expect(stub).to have_been_requested
+    end
+  end
+
+  describe 'idempotency keys' do
+    %i[cancel reinstate].each do |action|
+      it "sends Idempotency-Key on #{action}" do
+        stub = stub_request(:post, "https://api.hyperline.co/v1/subscriptions/sub_001/#{action}")
+               .with(headers: { 'Idempotency-Key' => 'key-1' })
+               .to_return(status: 200, headers: { 'Content-Type' => 'application/json' }, body: '{}')
+
+        subscriptions.public_send(action, 'sub_001', idempotency_key: 'key-1')
+
+        expect(stub).to have_been_requested
+      end
+    end
+
+    it 'sends Idempotency-Key on update_operation' do
+      stub = stub_request(:post, 'https://api.hyperline.co/v1/subscriptions/sub_001/update')
+             .with(body: { type: 'add_coupon' }.to_json, headers: { 'Idempotency-Key' => 'key-1' })
+             .to_return(status: 200, headers: { 'Content-Type' => 'application/json' }, body: '{}')
+
+      subscriptions.update_operation('sub_001', { type: 'add_coupon' }, idempotency_key: 'key-1')
+
+      expect(stub).to have_been_requested
+    end
+  end
 end
