@@ -57,5 +57,9 @@ module Hyperline
     def price_books
       @price_books ||= Resources::PriceBooks.new(@connection)
     end
+
+    def integrations
+      @integrations ||= Resources::Integrations.new(@connection)
+    end
   end
 end

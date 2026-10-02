@@ -109,12 +109,13 @@ client.invoices.delete("inv_abc")
 
 # Actions
 client.invoices.validate("inv_abc")     # draft → to_pay
-client.invoices.charge("inv_abc")       # charge invoice
+client.invoices.charge("inv_abc", payment_method_id: "pm_xxx", idempotency_key: "key")
 client.invoices.void("inv_abc")         # void invoice
 
 # Download PDF
-pdf_data = client.invoices.download("inv_abc")
-File.binwrite("invoice.pdf", pdf_data)
+# Download (follows one redirect; returns Hyperline::Download with body, content_type, filename)
+pdf = client.invoices.download("inv_abc", lang: "en", locale: "en-GB")
+File.binwrite(pdf.filename || "invoice.pdf", pdf.body)
 
 # Credit notes
 client.invoices.create_credit_note("inv_abc", reason: "Duplicate charge")
@@ -125,6 +126,40 @@ client.invoices.mark_uncollectible("inv_abc")
 # Transactions
 client.invoices.create_transaction("inv_abc", amount: 5000)
 client.invoices.delete_transaction("inv_abc", "tx_xxx")
+```
+
+### v2 invoices (cursor pagination)
+
+```ruby
+page = client.invoices.list_v2(customer_id: "cus_xxx", limit: 50)
+page.next_cursor
+page.next_page                     # nil on the last page
+client.invoices.list_v2(customer_id: "cus_xxx").auto_paginate { |invoice| process(invoice) }
+client.invoices.get_v2("inv_abc")
+```
+
+### Customer portal
+
+```ruby
+client.customers.get_v2("cus_xxx")
+client.customers.payment_methods("cus_xxx", take: 20)   # Collection
+client.customers.delete_payment_method("cus_xxx", "pm_xxx", idempotency_key: "key")
+client.customers.portal("cus_xxx")                      # => { "url" => ... }
+client.subscriptions.preview_timeline("sub_xxx", max_events: 10)
+client.subscriptions.simulate_updates("sub_xxx", type: "update_count", payload: { ... })
+client.integrations.create_component_token(customer_id: "cus_xxx")
+```
+
+### Webhooks
+
+```ruby
+event = Hyperline::Webhook.verify!(
+  payload: request.raw_post,   # the raw body, not a re-serialised one
+  headers: request.headers,
+  secret: ENV.fetch("HYPERLINE_WEBHOOK_SECRET"),
+  tolerance: 300
+)
+# raises Hyperline::WebhookSignatureError when the signature or timestamp is invalid
 ```
 
 ### Pagination

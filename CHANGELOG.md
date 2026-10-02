@@ -6,6 +6,16 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Customer portal support: `Invoices#list_v2` / `#get_v2` (cursor-paginated `CursorCollection`),
+  `Customers#get_v2`, `#payment_methods`, `#delete_payment_method`, `#portal`,
+  `Subscriptions#preview_timeline` / `#simulate_updates`, the `Integrations` resource
+  (`#create_component_token`) and `Hyperline::Webhook.verify!` with `WebhookSignatureError`
+- `Invoices#download` follows one redirect without forwarding the Authorization header and returns
+  a `Hyperline::Download` (`body`, `content_type`, `filename`; `to_str` yields the bytes, so code
+  that treated the old return value as a String keeps working). It now uses `/v2/invoices/{id}/download`
+  and accepts `lang:` / `locale:`
+- `idempotency_key:` on `Invoices#charge`
+- `Collection` accepts `args:` so a nested list (payment methods) pages with its parent id
 - Features resource (list, get, create, update, archive, delete), keyed by the feature's `code`
   rather than an opaque id
 - `Products#features`, `#link_feature`, `#unlink_feature` and `#archive`

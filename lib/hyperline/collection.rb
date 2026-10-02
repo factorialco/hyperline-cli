@@ -8,13 +8,15 @@ module Hyperline
 
     # `method` is the resource method that produced this page. It matters because next_page has to
     # re-issue the *same* call: defaulting to #list meant a page from a custom list method, such as
-    # Subscriptions#list_templates, paged into the resource's default endpoint instead.
-    def initialize(data:, meta:, resource:, params:, method: :list)
+    # Subscriptions#list_templates, paged into the resource's default endpoint instead. `args` are
+    # the positional arguments of that method (a nested list needs its parent id).
+    def initialize(data:, meta:, resource:, params:, method: :list, args: [])
       @data     = data
       @meta     = meta
       @resource = resource
       @params   = params
       @method   = method
+      @args     = args
     end
 
     def each(&block)
@@ -40,7 +42,7 @@ module Hyperline
     def next_page
       return nil unless next_page?
 
-      @resource.public_send(@method, **@params, skip: skipped + taken)
+      @resource.public_send(@method, *@args, **@params, skip: skipped + taken)
     end
 
     def each_page

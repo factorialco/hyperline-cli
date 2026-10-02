@@ -90,6 +90,27 @@ RSpec.describe Hyperline::Resources::Invoices do
   end
 
   describe '#charge' do
+    it 'sends the body and the idempotency key' do
+      stub = stub_request(:post, 'https://api.hyperline.co/v1/invoices/inv_001/charge')
+             .with(body: { payment_method_id: 'pm_1', amount: 500 }.to_json,
+                   headers: { 'Idempotency-Key' => 'key-1' })
+             .to_return(status: 200, headers: { 'Content-Type' => 'application/json' }, body: '{}')
+
+      invoices.charge('inv_001', payment_method_id: 'pm_1', amount: 500, idempotency_key: 'key-1')
+
+      expect(stub).to have_been_requested
+    end
+
+    it 'sends no Idempotency-Key when none is given' do
+      stub = stub_request(:post, 'https://api.hyperline.co/v1/invoices/inv_001/charge')
+             .with { |req| !req.headers.key?('Idempotency-Key') }
+             .to_return(status: 200, headers: { 'Content-Type' => 'application/json' }, body: '{}')
+
+      invoices.charge('inv_001')
+
+      expect(stub).to have_been_requested
+    end
+
     it 'charges an invoice' do
       stub = stub_request(:post, 'https://api.hyperline.co/v1/invoices/inv_001/charge')
              .to_return(
@@ -118,22 +139,6 @@ RSpec.describe Hyperline::Resources::Invoices do
 
       expect(stub).to have_been_requested
       expect(result['status']).to eq('voided')
-    end
-  end
-
-  describe '#download' do
-    it 'downloads a PDF' do
-      stub = stub_request(:get, 'https://api.hyperline.co/v1/invoices/inv_001/download')
-             .to_return(
-               status: 200,
-               headers: { 'Content-Type' => 'application/pdf' },
-               body: '%PDF-1.4 fake content'
-             )
-
-      result = invoices.download('inv_001')
-
-      expect(stub).to have_been_requested
-      expect(result).to include('%PDF')
     end
   end
 
@@ -228,6 +233,97 @@ RSpec.describe Hyperline::Resources::Invoices do
 
       expect(all_items.length).to eq(3)
       expect(all_items.map { |i| i['id'] }).to eq(%w[inv_001 inv_002 inv_003])
+    end
+  end
+
+  describe '#list_v2' do
+    it 'sends customer_id to /v2/invoices' do
+      stub = stub_api(:get, '/v2/invoices', query: { 'customer_id' => 'cus_001', 'limit' => '2' },
+                                            body: { data: [{ id: 'inv_001' }], next_cursor: nil, has_more: false })
+
+      result = invoices.list_v2(customer_id: 'cus_001', limit: 2)
+
+      expect(stub).to have_been_requested
+      expect(result).to be_a(Hyperline::CursorCollection)
+      expect(result.data.first['id']).to eq('inv_001')
+      expect(result.next_page?).to be(false)
+      expect(result.next_page).to be_nil
+    end
+
+    it 'pages across two pages by cursor' do
+      stub_api(:get, '/v2/invoices', query: { 'customer_id' => 'cus_001' },
+                                     body: { data: [{ id: 'inv_001' }, { id: 'inv_002' }],
+                                             next_cursor: 'c2', has_more: true })
+      stub_api(:get, '/v2/invoices', query: { 'customer_id' => 'cus_001', 'cursor' => 'c2' },
+                                     body: { data: [{ id: 'inv_003' }], next_cursor: nil, has_more: false })
+
+      pages = invoices.list_v2(customer_id: 'cus_001').each_page.to_a
+      all = invoices.list_v2(customer_id: 'cus_001').auto_paginate.map { |i| i['id'] }
+
+      expect(pages.map { |p| p.data.length }).to eq([2, 1])
+      expect(all).to eq(%w[inv_001 inv_002 inv_003])
+    end
+
+    it 'reads the cursor from a meta object' do
+      stub_api(:get, '/v2/invoices', body: { data: [], meta: { next_cursor: 'c9', has_more: true } })
+
+      expect(invoices.list_v2.next_cursor).to eq('c9')
+    end
+
+    it 'treats a cursor without has_more as another page' do
+      stub_api(:get, '/v2/invoices', body: { data: [], next_cursor: 'c2' })
+
+      expect(invoices.list_v2.next_page?).to be(true)
+    end
+  end
+
+  describe '#get_v2' do
+    it 'gets /v2/invoices/{id}' do
+      stub = stub_api(:get, '/v2/invoices/inv_001', body: { id: 'inv_001' })
+
+      expect(invoices.get_v2('inv_001')['id']).to eq('inv_001')
+      expect(stub).to have_been_requested
+    end
+  end
+
+  describe '#download' do
+    it 'returns the bytes with content type and filename' do
+      stub = stub_request(:get, 'https://api.hyperline.co/v2/invoices/inv_001/download')
+             .with(query: { 'lang' => 'en',
+                            'locale' => 'en-GB' }, headers: { 'Authorization' => 'Bearer test_key_123' })
+             .to_return(status: 200,
+                        headers: { 'Content-Type' => 'application/pdf',
+                                   'Content-Disposition' => 'attachment; filename="inv_001.pdf"' },
+                        body: '%PDF-1.4 fake content')
+
+      result = invoices.download('inv_001', lang: 'en', locale: 'en-GB')
+
+      expect(stub).to have_been_requested
+      expect(result).to be_a(Hyperline::Download)
+      expect(result.body).to eq('%PDF-1.4 fake content')
+      expect(result.content_type).to eq('application/pdf')
+      expect(result.filename).to eq('inv_001.pdf')
+      expect(result.to_str).to include('%PDF')
+    end
+
+    it 'follows a 302 once without sending the Authorization header' do
+      stub_request(:get, 'https://api.hyperline.co/v2/invoices/inv_001/download')
+        .to_return(status: 302, headers: { 'Location' => 'https://files.example.com/tmp/abc.pdf?sig=1' })
+      redirected = stub_request(:get, 'https://files.example.com/tmp/abc.pdf?sig=1')
+                   .with { |req| !req.headers.key?('Authorization') }
+                   .to_return(status: 200, headers: { 'Content-Type' => 'application/pdf' }, body: '%PDF-redirected')
+
+      result = invoices.download('inv_001')
+
+      expect(redirected).to have_been_requested
+      expect(result.body).to eq('%PDF-redirected')
+      expect(result.filename).to be_nil
+    end
+
+    it 'raises NotFoundError on 404' do
+      stub_api(:get, '/v2/invoices/missing/download', status: 404, body: { message: 'nope' })
+
+      expect { invoices.download('missing') }.to raise_error(Hyperline::NotFoundError)
     end
   end
 end

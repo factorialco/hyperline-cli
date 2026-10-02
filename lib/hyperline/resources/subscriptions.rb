@@ -46,6 +46,15 @@ module Hyperline
         request(:post, "#{resource_path(id)}/update", body, idempotency_key: idempotency_key)
       end
 
+      def preview_timeline(id, **params)
+        request(:get, "#{resource_path(id)}/preview-timeline", params)
+      end
+
+      # Takes the same body as #update_operation and returns the estimate without applying it.
+      def simulate_updates(id, body)
+        request(:post, "#{resource_path(id)}/simulate-updates", body)
+      end
+
       def cancel(id, idempotency_key: nil, **params)
         request(
           :post,

@@ -108,6 +108,22 @@ module Hyperline
         offset < total.to_i ? offset : nil
       end
 
+      # Builds a CursorCollection from a v2 envelope. Hyperline's docs describe the cursor at the
+      # top level (`next_cursor`, `has_more`); a `meta` object is accepted too in case the
+      # envelope nests them.
+      def cursor_collection(response, method:, params:, args: [])
+        meta = response['meta'].is_a?(Hash) ? response['meta'] : {}
+        CursorCollection.new(
+          data: Array(response['data']),
+          next_cursor: response.fetch('next_cursor') { meta['next_cursor'] },
+          has_more: response.fetch('has_more') { meta['has_more'] },
+          resource: self,
+          params: params,
+          method: method,
+          args: args
+        )
+      end
+
       def base_path
         raise NotImplementedError, "#{self.class} must implement #base_path"
       end
