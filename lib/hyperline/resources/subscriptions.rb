@@ -17,8 +17,8 @@ module Hyperline
         )
       end
 
-      def get(id)
-        request(:get, "/v2/subscriptions/#{id}")
+      def get(id, **params)
+        request(:get, "/v2/subscriptions/#{id}", params)
       end
 
       def update(id, idempotency_key: nil, **attrs)

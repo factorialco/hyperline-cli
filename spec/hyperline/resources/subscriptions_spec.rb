@@ -39,6 +39,28 @@ RSpec.describe Hyperline::Resources::Subscriptions do
       expect(stub).to have_been_requested
       expect(result['id']).to eq('sub_001')
     end
+
+    it 'sends optional params as the query string' do
+      stub = stub_request(:get, 'https://api.hyperline.co/v2/subscriptions/sub_001')
+             .with(query: { 'include_live_billing' => 'true' })
+             .to_return(status: 200, headers: { 'Content-Type' => 'application/json' },
+                        body: fixture('subscription').to_json)
+
+      subscriptions.get('sub_001', include_live_billing: true)
+
+      expect(stub).to have_been_requested
+    end
+
+    it 'sends no query string without params' do
+      stub = stub_request(:get, 'https://api.hyperline.co/v2/subscriptions/sub_001')
+             .with { |req| req.uri.query.nil? }
+             .to_return(status: 200, headers: { 'Content-Type' => 'application/json' },
+                        body: fixture('subscription').to_json)
+
+      subscriptions.get('sub_001')
+
+      expect(stub).to have_been_requested
+    end
   end
 
   describe '#create' do

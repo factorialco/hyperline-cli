@@ -326,4 +326,50 @@ RSpec.describe Hyperline::Resources::Invoices do
       expect { invoices.download('missing') }.to raise_error(Hyperline::NotFoundError)
     end
   end
+
+  describe '#download_link' do
+    let(:s3_url) do
+      'https://hyperline-sandbox-invoices.s3.eu-west-3.amazonaws.com/cl_1/inv_001.pdf' \
+        '?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20260102T030405Z&X-Amz-Expires=3600&X-Amz-Signature=abc'
+    end
+
+    it 'returns the S3 location without following it and computes the expiry' do
+      stub = stub_request(:get, 'https://api.hyperline.co/v2/invoices/inv_001/download')
+             .with(headers: { 'Authorization' => 'Bearer test_key_123' })
+             .to_return(status: 302, headers: { 'Location' => s3_url }, body: 'Found. Redirecting')
+
+      link = invoices.download_link('inv_001')
+
+      expect(stub).to have_been_requested.once
+      expect(link).to be_a(Hyperline::DownloadLink)
+      expect(link.url).to eq(s3_url)
+      expect(link.expires_at).to eq(Time.utc(2026, 1, 2, 4, 4, 5))
+    end
+
+    it 'leaves expires_at nil when the location is not signed with X-Amz params' do
+      stub_request(:get, 'https://api.hyperline.co/v2/invoices/inv_001/download')
+        .to_return(status: 302, headers: { 'Location' => 'https://files.example.com/a.pdf' })
+
+      link = invoices.download_link('inv_001')
+
+      expect(link.url).to eq('https://files.example.com/a.pdf')
+      expect(link.expires_at).to be_nil
+    end
+
+    it 'returns a link without url when the API answers with the file itself' do
+      stub_request(:get, 'https://api.hyperline.co/v2/invoices/inv_001/download')
+        .to_return(status: 200, headers: { 'Content-Type' => 'application/pdf' }, body: '%PDF-1.4')
+
+      link = invoices.download_link('inv_001')
+
+      expect(link.url).to be_nil
+      expect(link.expires_at).to be_nil
+    end
+
+    it 'raises NotFoundError on 404' do
+      stub_api(:get, '/v2/invoices/missing/download', status: 404, body: { message: 'nope' })
+
+      expect { invoices.download_link('missing') }.to raise_error(Hyperline::NotFoundError)
+    end
+  end
 end

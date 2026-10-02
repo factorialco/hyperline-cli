@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- `Invoices#download_link` returns a `Hyperline::DownloadLink` (`url`, `expires_at`) with the
+  pre-signed URL from the API's 302 without following it; `url` is nil when the API answers with
+  the file itself, in which case callers fall back to `#download`. Works for credit notes too
+- `Subscriptions#get` accepts query params, e.g. `get(id, include_live_billing: true)`
 - Customer portal support: `Invoices#list_v2` / `#get_v2` (cursor-paginated `CursorCollection`),
   `Customers#get_v2`, `#payment_methods`, `#delete_payment_method`, `#portal`,
   `Subscriptions#preview_timeline` / `#simulate_updates`, the `Integrations` resource
