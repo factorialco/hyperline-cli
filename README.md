@@ -115,6 +115,11 @@ client.invoices.void("inv_abc")         # void invoice
 # Download PDF
 # Download (follows one redirect; returns Hyperline::Download with body, content_type, filename)
 pdf = client.invoices.download("inv_abc", lang: "en", locale: "en-GB")
+
+# Temporary pre-signed URL, not followed (url is nil if the API returned the file itself; use download then)
+link = client.invoices.download_link("inv_abc")
+link.url
+link.expires_at
 File.binwrite(pdf.filename || "invoice.pdf", pdf.body)
 
 # Credit notes

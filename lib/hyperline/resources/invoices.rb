@@ -42,6 +42,17 @@ module Hyperline
         handle_error(e)
       end
 
+      # Returns the pre-signed URL the API redirects to, without following it, so the Authorization
+      # header is only ever sent to the API. Credit notes use the same endpoint. When the API
+      # answers with the file itself, the link has a nil `url` and callers fall back to #download.
+      def download_link(id, **params)
+        response = connection.get("/v2/invoices/#{id}/download", params)
+        location = response.headers['Location'] if redirect?(response)
+        DownloadLink.from_location(location)
+      rescue Faraday::ClientError, Faraday::ServerError => e
+        handle_error(e)
+      end
+
       def create_credit_note(id, **attrs)
         request(:post, "#{resource_path(id)}/credit-notes", attrs)
       end
