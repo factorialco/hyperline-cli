@@ -39,6 +39,11 @@ module Hyperline
       #     calculation_method: "pro_rata"                     # pro_rata / pay_in_full /
       #   }                                                    #    do_not_charge
       #
+      # add_coupon applies a coupon from the catalog (see Coupons) and needs its `coupon_id`; the API
+      # accepts no inline coupon definition. Its payload is `{ coupon_id:, repeat:, duration_period:,
+      # duration_count:, apply_at:, expires_at:, product_ids: }`; remove_coupon takes
+      # `{ subscription_coupon_id: }`, the id of the coupon on the subscription, not the catalog id.
+      #
       # The response is the created operation, `{ "id" => "supd_..." }`. update_count sets the
       # count outright rather than incrementing it, so applying the same one twice lands on the
       # same number -- but it does create two operations unless an idempotency key is passed.

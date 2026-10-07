@@ -61,6 +61,23 @@ product = client.products.update("itm_abc", name: "Enterprise Plan")
 client.products.delete("itm_abc")
 ```
 
+### Coupons
+
+```ruby
+coupon = client.coupons.create(
+  name: "Launch", type: "percent", discount_percent: 50,
+  repeat: "duration", duration: { count: 1, period: "months" },
+  idempotency_key: "coupon-launch"
+)
+client.coupons.list(take: 50).auto_paginate { |c| puts c["id"] } # take/skip pagination
+client.coupons.get(coupon["id"])
+client.coupons.update(coupon["id"], name: "Launch 2026")
+client.coupons.delete(coupon["id"]) # 204, no body
+```
+
+Apply a catalog coupon to a subscription with `Subscriptions#update_operation` and
+`type: "add_coupon"` (payload `{ coupon_id:, repeat:, ... }`).
+
 ### Subscriptions
 
 ```ruby

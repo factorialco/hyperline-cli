@@ -30,6 +30,10 @@ module Hyperline
       @features ||= Resources::Features.new(@connection)
     end
 
+    def coupons
+      @coupons ||= Resources::Coupons.new(@connection)
+    end
+
     def subscriptions
       @subscriptions ||= Resources::Subscriptions.new(@connection)
     end
