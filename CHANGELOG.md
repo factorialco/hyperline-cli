@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- Coupons resource (`client.coupons`: list, get, create, update, delete) for the coupon catalog;
+  `Subscriptions#update_operation` documents the `add_coupon` / `remove_coupon` payloads
 - `Invoices#download_link` returns a `Hyperline::DownloadLink` (`url`, `expires_at`) with the
   pre-signed URL from the API's 302 without following it; `url` is nil when the API answers with
   the file itself, in which case callers fall back to `#download`. Works for credit notes too
