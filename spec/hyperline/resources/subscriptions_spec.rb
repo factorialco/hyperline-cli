@@ -291,6 +291,35 @@ RSpec.describe Hyperline::Resources::Subscriptions do
     end
   end
 
+  describe '#update_many' do
+    it 'posts the operations to the v1 update-many endpoint' do
+      body = {
+        application_schedule: 'immediately',
+        payment_schedule: 'immediately',
+        calculation_method: 'pro_rata',
+        updates: [
+          {
+            type: 'add_product',
+            payload: { type: 'seat', product_id: 'itm_001', count: 25, billing_interval_period: 'months',
+                       billing_interval_count: 1, start_or_end: 'start' }
+          }
+        ]
+      }
+      stub = stub_request(:post, 'https://api.hyperline.co/v1/subscriptions/sub_001/update-many')
+             .with(body: body.to_json, headers: { 'Idempotency-Key' => 'key-1' })
+             .to_return(
+               status: 201,
+               headers: { 'Content-Type' => 'application/json' },
+               body: [{ id: 'supd_001' }].to_json
+             )
+
+      result = subscriptions.update_many('sub_001', body, idempotency_key: 'key-1')
+
+      expect(stub).to have_been_requested
+      expect(result).to eq([{ 'id' => 'supd_001' }])
+    end
+  end
+
   describe 'action methods' do
     %w[cancel pause activate reactivate reinstate renew].each do |action|
       describe "##{action}" do

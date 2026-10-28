@@ -51,6 +51,34 @@ module Hyperline
         request(:post, "#{resource_path(id)}/update", body, idempotency_key: idempotency_key)
       end
 
+      # Applies several operations at once. POST /v1/subscriptions/{id}/update-many.
+      #
+      # The schedule and calculation are shared by every entry in `updates`, so a purchase of
+      # several products is invoiced together, or not at all:
+      #
+      #   {
+      #     application_schedule: "immediately",               # or "scheduled" with apply_at:
+      #     payment_schedule: "immediately",                   # immediately / next_invoice / custom
+      #     calculation_method: "pro_rata",                    # pro_rata / pay_in_full /
+      #     updates: [                                         #    do_not_charge
+      #       {
+      #         type: "add_product",                           # or remove_product / update_count /
+      #         payload: {                                     #    add_coupon / remove_coupon /
+      #           type: "seat",                                #    update_prices
+      #           product_id:, count:,
+      #           billing_interval_period: "months", billing_interval_count: 1,
+      #           start_or_end: "start"
+      #         }
+      #       }
+      #     ]
+      #   }
+      #
+      # add_product without `prices` bills the catalog prices. The response is the list of created
+      # operations, `[{ "id" => "supd_..." }, ...]`.
+      def update_many(id, body, idempotency_key: nil)
+        request(:post, "#{resource_path(id)}/update-many", body, idempotency_key: idempotency_key)
+      end
+
       def preview_timeline(id, **params)
         request(:get, "#{resource_path(id)}/preview-timeline", params)
       end
