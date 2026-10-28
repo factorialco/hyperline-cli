@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- SubscriptionTransitions resource (`client.subscription_transitions`: list, get, create,
+  cancel) to schedule a subscription's next configuration and cancel it before it applies
 - `Subscriptions#update_many` (`POST /v1/subscriptions/{id}/update-many`) applies several
   operations, `add_product` included, under one schedule and calculation method
 - Coupons resource (`client.coupons`: list, get, create, update, delete) for the coupon catalog;
