@@ -38,6 +38,10 @@ module Hyperline
       @subscriptions ||= Resources::Subscriptions.new(@connection)
     end
 
+    def subscription_transitions
+      @subscription_transitions ||= Resources::SubscriptionTransitions.new(@connection)
+    end
+
     def invoices
       @invoices ||= Resources::Invoices.new(@connection)
     end
