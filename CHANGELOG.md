@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- `Subscriptions#update_many` (`POST /v1/subscriptions/{id}/update-many`) applies several
+  operations, `add_product` included, under one schedule and calculation method
 - Coupons resource (`client.coupons`: list, get, create, update, delete) for the coupon catalog;
   `Subscriptions#update_operation` documents the `add_coupon` / `remove_coupon` payloads
 - `Invoices#download_link` returns a `Hyperline::DownloadLink` (`url`, `expires_at`) with the
